@@ -42,7 +42,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
     });
 
     try {
-      // Try IP location with timeout
+
       final location = await _getLocationFromIP().timeout(
         const Duration(seconds: 8),
         onTimeout: () {
@@ -66,13 +66,11 @@ class _WeatherScreenState extends State<WeatherScreen> {
           _isLoading = false;
         });
       } else {
-        // If IP location fails, use Dhaka as default
         print('IP location failed, using default city');
         _fetchWeatherByCity('Dhaka');
       }
     } catch (e) {
       print('Current location error: $e');
-      // If any error occurs, use default city
       _fetchWeatherByCity('Dhaka');
     }
   }
@@ -211,7 +209,6 @@ class _WeatherScreenState extends State<WeatherScreen> {
             padding: const EdgeInsets.all(20.0),
             child: Column(
               children: [
-                // Search Header
                 _buildSearchHeader(),
                 const SizedBox(height: 20),
 
