@@ -706,7 +706,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
 
     final hour = DateTime.now().hour;
     if (hour >= 6 && hour < 18) {
-      return const Color(0xFF64B5F6);
+      return const Color(0xFF1A237E);
     } else {
       return const Color(0xFF0D47A1);
     }
