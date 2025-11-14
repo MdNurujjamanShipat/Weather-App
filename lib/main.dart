@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'screens/weather_screen.dart';
 
@@ -24,4 +23,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-

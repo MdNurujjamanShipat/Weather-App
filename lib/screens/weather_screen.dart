@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../services/weather_service.dart';
 import '../services/geocoding_service.dart';
 import '../models/weather_model.dart';
@@ -20,14 +22,88 @@ class _WeatherScreenState extends State<WeatherScreen> {
   bool _isLoading = false;
   bool _isSearchingLocation = false;
   String _errorMessage = '';
-  String _currentLocation = 'Dhaka, Bangladesh';
+  String _currentLocation = 'Loading...';
   List<Location> _searchResults = [];
   final FocusNode _searchFocusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
-    _fetchWeatherByCity('Dhaka');
+    _getCurrentLocationWeather();
+  }
+
+  // Fixed method to get current location using IP with timeout
+  Future<void> _getCurrentLocationWeather() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = '';
+      _weatherData = null;
+      _currentLocation = 'Detecting location...';
+    });
+
+    try {
+      // Try IP location with timeout
+      final location = await _getLocationFromIP().timeout(
+        const Duration(seconds: 8),
+        onTimeout: () {
+          print('IP location timeout');
+          return null;
+        },
+      );
+
+      if (location != null) {
+        setState(() {
+          _currentLocation = '${location.name}, ${location.country}';
+        });
+
+        final weatherData = await _weatherService.getWeatherData(
+          location.latitude,
+          location.longitude,
+        );
+
+        setState(() {
+          _weatherData = weatherData;
+          _isLoading = false;
+        });
+      } else {
+        // If IP location fails, use Dhaka as default
+        print('IP location failed, using default city');
+        _fetchWeatherByCity('Dhaka');
+      }
+    } catch (e) {
+      print('Current location error: $e');
+      // If any error occurs, use default city
+      _fetchWeatherByCity('Dhaka');
+    }
+  }
+
+  Future<Location?> _getLocationFromIP() async {
+    try {
+      final response = await http
+          .get(Uri.parse('http://ip-api.com/json/'))
+          .timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final city = data['city'];
+        final country = data['country'];
+
+        print('IP Location found: $city, $country');
+
+        if (city != null && country != null && city.isNotEmpty) {
+          // Search for the city to get coordinates
+          final locations = await _geocodingService.searchLocation(city);
+          if (locations.isNotEmpty) {
+            return locations.first;
+          }
+        }
+      } else {
+        print('IP API response error: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('IP location failed: $e');
+    }
+    return null;
   }
 
   Future<void> _fetchWeatherByCity(String cityName) async {
@@ -44,6 +120,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
       if (locations.isEmpty) {
         setState(() {
           _errorMessage = 'City not found. Please try another name.';
+          _isLoading = false;
         });
         return;
       }
@@ -62,14 +139,15 @@ class _WeatherScreenState extends State<WeatherScreen> {
 
       setState(() {
         _weatherData = weatherData;
+        _isLoading = false;
       });
     } catch (e) {
       setState(() {
         _errorMessage = 'Failed to fetch weather data: $e';
+        _isLoading = false;
       });
     } finally {
       setState(() {
-        _isLoading = false;
         _isSearchingLocation = false;
       });
     }
@@ -312,6 +390,17 @@ class _WeatherScreenState extends State<WeatherScreen> {
                 textAlign: TextAlign.center,
               ),
             ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                _fetchWeatherByCity('Dhaka');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white.withOpacity(0.2),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Try Dhaka'),
+            ),
           ],
         ),
       );
@@ -319,9 +408,35 @@ class _WeatherScreenState extends State<WeatherScreen> {
 
     if (_weatherData == null) {
       return Center(
-        child: Text(
-          'Search for a city to get weather forecast',
-          style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.cloud_queue,
+              size: 64,
+              color: Colors.white.withOpacity(0.6),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Search for a city to get weather forecast',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.8),
+                fontSize: 16,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                _fetchWeatherByCity('Dhaka');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white.withOpacity(0.2),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Load Dhaka Weather'),
+            ),
+          ],
         ),
       );
     }
@@ -333,15 +448,10 @@ class _WeatherScreenState extends State<WeatherScreen> {
     return SingleChildScrollView(
       child: Column(
         children: [
-          // Current Weather Section
           _buildCurrentWeather(weatherData),
           const SizedBox(height: 30),
-
-          // Hourly Forecast
           _buildHourlyForecast(weatherData.hourly),
           const SizedBox(height: 30),
-
-          // Daily Forecast
           _buildDailyForecast(weatherData.daily),
         ],
       ),
@@ -354,7 +464,6 @@ class _WeatherScreenState extends State<WeatherScreen> {
 
     return Column(
       children: [
-        // Weather Icon and Temperature
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -374,7 +483,6 @@ class _WeatherScreenState extends State<WeatherScreen> {
                   ),
                 ),
                 const SizedBox(height: 5),
-                // High/Low for today
                 if (today != null)
                   Row(
                     children: [
@@ -411,8 +519,6 @@ class _WeatherScreenState extends State<WeatherScreen> {
           ],
         ),
         const SizedBox(height: 20),
-
-        // Weather Details
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(

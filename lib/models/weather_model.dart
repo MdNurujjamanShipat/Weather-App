@@ -61,17 +61,20 @@ class HourlyWeather {
   final DateTime time;
   final double temperature;
   final int weatherCode;
+  final double windSpeed;
 
   HourlyWeather({
     required this.time,
     required this.temperature,
     required this.weatherCode,
+    required this.windSpeed,
   });
 
   static List<HourlyWeather> listFromJson(Map<String, dynamic> json) {
     final times = json['time'] as List<dynamic>;
     final temperatures = json['temperature_2m'] as List<dynamic>;
     final weatherCodes = json['weather_code'] as List<dynamic>;
+    final windSpeeds = json['wind_speed_10m'] as List<dynamic>;
 
     return List<HourlyWeather>.generate(
       times.length,
@@ -79,6 +82,7 @@ class HourlyWeather {
         time: DateTime.parse(times[index]),
         temperature: temperatures[index]?.toDouble() ?? 0.0,
         weatherCode: weatherCodes[index] ?? 0,
+        windSpeed: windSpeeds[index]?.toDouble() ?? 0.0,
       ),
     );
   }
@@ -88,12 +92,16 @@ class DailyWeather {
   final DateTime time;
   final double temperatureMax;
   final double temperatureMin;
+  final DateTime sunrise;
+  final DateTime sunset;
   final int weatherCode;
 
   DailyWeather({
     required this.time,
     required this.temperatureMax,
     required this.temperatureMin,
+    required this.sunrise,
+    required this.sunset,
     required this.weatherCode,
   });
 
@@ -101,6 +109,8 @@ class DailyWeather {
     final times = json['time'] as List<dynamic>;
     final tempMax = json['temperature_2m_max'] as List<dynamic>;
     final tempMin = json['temperature_2m_min'] as List<dynamic>;
+    final sunrises = json['sunrise'] as List<dynamic>;
+    final sunsets = json['sunset'] as List<dynamic>;
     final weatherCodes = json['weather_code'] as List<dynamic>;
 
     return List<DailyWeather>.generate(
@@ -109,8 +119,12 @@ class DailyWeather {
         time: DateTime.parse(times[index]),
         temperatureMax: tempMax[index]?.toDouble() ?? 0.0,
         temperatureMin: tempMin[index]?.toDouble() ?? 0.0,
+        sunrise: DateTime.parse(sunrises[index]),
+        sunset: DateTime.parse(sunsets[index]),
         weatherCode: weatherCodes[index] ?? 0,
       ),
     );
   }
 }
+
+
