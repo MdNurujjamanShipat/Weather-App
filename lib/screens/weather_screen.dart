@@ -32,7 +32,6 @@ class _WeatherScreenState extends State<WeatherScreen> {
     _getCurrentLocationWeather();
   }
 
-  // Fixed method to get current location using IP with timeout
   Future<void> _getCurrentLocationWeather() async {
     setState(() {
       _isLoading = true;
@@ -42,7 +41,6 @@ class _WeatherScreenState extends State<WeatherScreen> {
     });
 
     try {
-
       final location = await _getLocationFromIP().timeout(
         const Duration(seconds: 8),
         onTimeout: () {
@@ -124,8 +122,6 @@ class _WeatherScreenState extends State<WeatherScreen> {
       }
 
       final location = locations.first;
-
-      // Show only city and country
       setState(() {
         _currentLocation = '${location.name}, ${location.country}';
       });
@@ -215,7 +211,6 @@ class _WeatherScreenState extends State<WeatherScreen> {
                 // Location Results
                 if (_searchResults.isNotEmpty) _buildLocationResults(),
 
-                // Content Area
                 Expanded(child: _buildContent()),
               ],
             ),
@@ -228,7 +223,6 @@ class _WeatherScreenState extends State<WeatherScreen> {
   Widget _buildSearchHeader() {
     return Column(
       children: [
-        // Current Location
         Text(
           _currentLocation,
           style: const TextStyle(
@@ -240,7 +234,6 @@ class _WeatherScreenState extends State<WeatherScreen> {
         ),
         const SizedBox(height: 10),
 
-        // Search Box
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           decoration: BoxDecoration(
